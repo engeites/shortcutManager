@@ -1,0 +1,1 @@
+from settings.my_loads import my_coin_load

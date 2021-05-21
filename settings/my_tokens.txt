@@ -2,3 +2,5 @@ Bitcoin
 Pancakeswap
 1inch
 Ethereum
+Spartan-protocol
+Pancakebunny

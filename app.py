@@ -1,42 +1,36 @@
 import PySimpleGUI as sg
 import datetime
 
-from coinmarketcap import Parser
-from USDRUB import USDRUBParser
-from my_loads import my_coin_load
+from misc import Parser, USDRUBParser, TokenLoader
+from settings import my_coin_load
+from database import Database
 
-# SOME CONSTANTS
-UPDATE_FREQUENCY = 300000
-TIMER = 0
-keyboard_events = "abcdefghijklmnopqrstuvwxyz"
-command = ""
+from config import UPDATE_FREQUENCY, TIMER, MAIN_THEME
 
+sg.theme(MAIN_THEME)
 
-sg.theme('Light Green 6')
-
+# TODO: Add a decent logger finally
 
 BG_COLOR = sg.theme_text_color()
 TXT_COLOR = sg.theme_background_color()
+REFRESH_PRICES_TIMEOUT = 1000 * 60 * 5
 
+# GET TOKEN LIST
+token_loader = TokenLoader()
+tokens = token_loader.get_tokens()
 
-
-# GET ALL MY TOKEN SLUG FROM FILE
-def load_my_tokens():
-    token_list = []
-    with open("my_tokens.txt", 'r', encoding="utf-8") as fout:
-        r = fout.readlines()
-        for i in r:
-            token_list.append(i.strip())
-    return token_list
-
-tokens = load_my_tokens()
-
-# CREATING PARSER OBJ
+# CREATING PARSER OBJ TO PARSE PRICES
 coin = Parser()
 usd_rub = USDRUBParser()
 
+db = Database()
 
-# GET ALL PRICES FROM COINMARK
+# TODO: Move database work to diff.module maybe?
+def save_to_database(token, price):
+    db.manage_tables(token, price)
+
+
+# GET ALL PRICES FROM COINMARKETCAP
 def get_price(token_slug):
     price = coin.get_price(token_slug)
     return price
@@ -65,6 +59,10 @@ def count_summ(prices):
         total_summ += summ
     return round(total_summ)
 
+def on_start(window):
+    # TODO: When it starts, it saves some data to the db. It should not. Fix it
+    redraw_prices(window)
+
 
 def draw_metrics(token):
     return [sg.Text(token,
@@ -73,7 +71,7 @@ def draw_metrics(token):
                     text_color=TXT_COLOR,
                     justification="left"
                     ),
-            # sg.Text(str(get_price(token)),
+
             sg.Text("****",
                     font=("Arial", 10),
                     justification="right",
@@ -85,7 +83,7 @@ def draw_metrics(token):
 
 
 def check_if_time_for_prices(counter):
-    if counter == 600:
+    if counter == REFRESH_PRICES_TIMEOUT:
         return True
     return False
 
@@ -106,16 +104,24 @@ def draw_window():
                   justification="center")]],
         element_justification='center', key="COL1")
 
-    col2 = sg.Column([[sg.Button("EXIT")]])
+    # TODO: settings button should be replaced. And maybe even work
+    col2 = sg.Column([[sg.Text("edit",
+                               enable_events=True,
+                               key="settings",
+                               justification="right")]],
+                     element_justification='right',
+                     justification="right"
+                     )
 
     left_col = sg.Column(
         [[
-            sg.Text("$2500",
+            sg.Text("$****",
                     font=('Haettenschweiler', 60),
                     justification='center',
                     background_color=BG_COLOR,
                     text_color=TXT_COLOR,
                     key="total_sum",
+                    size=(5,1),
                     pad=((0, 0), (0, 0)))]],
         pad=((0, 20), (0, 0)))
 
@@ -135,6 +141,7 @@ def draw_window():
         [[
             sg.Text("Время последнего обновления: ***", key="last_update_time")
         ]])
+    # TODO: col4 Text content is wrong displayed. Fix
 
     top_col = sg.Column([[col1, col2]])
     mid_col = sg.Column([[left_col, right_col]], background_color=BG_COLOR)
@@ -145,7 +152,7 @@ def draw_window():
               [bottom_col]]
 
     window = sg.Window(layout=layout, title='Weather Widget', margins=(0, 0), finalize=True,
-                       element_justification='center', keep_on_top=True, no_titlebar=True, grab_anywhere=True,
+                       element_justification='center', right_click_menu=sg.MENU_RIGHT_CLICK_EXIT, keep_on_top=True, no_titlebar=True, grab_anywhere=True,
                        alpha_channel=0.8)
 
     time = get_current_time()
@@ -159,6 +166,7 @@ def redraw_prices(window):
         window[token].update(payload[token])
         sum = count_summ(payload)
         window['total_sum'].update(f"${sum}")
+        save_to_database(token, payload[token])
 
 
 def redraw_time(window, time):
@@ -169,9 +177,10 @@ def redraw_time(window, time):
 
 def main():
     counter = 0
-    refresh_rate =  1000
+    refresh_rate = 500
 
     window = draw_window()
+    on_start(window)
 
     while True:
         event, values = window.read(timeout=refresh_rate)
@@ -179,13 +188,16 @@ def main():
         counter += 100
         time_to_update_prices = check_if_time_for_prices(counter)
         if time_to_update_prices:
+            counter = 0
             redraw_prices(window)
             redraw_time(window, time)
         else:
             redraw_time(window, time)
 
-        if event == "EXIT":
+        if event == "Exit":
             break
+        if event == "settings":
+            print("Settings pressed")
 
 
 if __name__ == '__main__':
