@@ -1,11 +1,26 @@
-import PySimpleGUI as sg
 import datetime
 
-from misc import Parser, USDRUBParser, TokenLoader
-from settings import my_coin_load
-from database import Database
+import PySimpleGUI as sg
 
-from config import UPDATE_FREQUENCY, TIMER, MAIN_THEME
+# List of user's tokens
+from loader import tokens
+from settings import my_coin_load
+
+# Basic database commands
+from databaseManager import save_to_database
+
+# Parsers to get current prices
+from parsers import update_prices, get_usd_rub
+
+from misc import get_current_time
+
+
+# Instruments to add, edit and delete user's tokens
+from tokenManager import TokenAmountEditer
+
+# Some constants
+from config import REFRESH_PRICES_TIMEOUT
+from config import MAIN_THEME
 
 sg.theme(MAIN_THEME)
 
@@ -13,43 +28,10 @@ sg.theme(MAIN_THEME)
 
 BG_COLOR = sg.theme_text_color()
 TXT_COLOR = sg.theme_background_color()
-REFRESH_PRICES_TIMEOUT = 1000 * 60 * 5
-
-# GET TOKEN LIST
-token_loader = TokenLoader()
-tokens = token_loader.get_tokens()
-
-# CREATING PARSER OBJ TO PARSE PRICES
-coin = Parser()
-usd_rub = USDRUBParser()
-
-db = Database()
-
-# TODO: Move database work to diff.module maybe?
-def save_to_database(token, price):
-    db.manage_tables(token, price)
 
 
-# GET ALL PRICES FROM COINMARKETCAP
-def get_price(token_slug):
-    price = coin.get_price(token_slug)
-    return price
+# CREATING PARSER OBJECTS TO PARSE PRICES
 
-
-def update_prices():
-    payload = {}
-    for token in tokens:
-        payload[token] = get_price(token)
-    return payload
-
-
-def get_current_time():
-    now = datetime.datetime.now()
-
-    cur_date = now.strftime("%Y-%m-%d")
-    cur_time = now.strftime("%H:%M:%S")
-    return {"current_time": cur_time,
-            "current_date": cur_date}
 
 
 def count_summ(prices):
@@ -58,6 +40,7 @@ def count_summ(prices):
         summ = prices[token] * my_coin_load[token]
         total_summ += summ
     return round(total_summ)
+
 
 def on_start(window):
     # TODO: When it starts, it saves some data to the db. It should not. Fix it
@@ -88,6 +71,30 @@ def check_if_time_for_prices(counter):
     return False
 
 
+def commit_settings_change(payload):
+    token = payload[0]
+    amount = payload[1]
+    editer = TokenAmountEditer(token, amount)
+    editer.edit()
+
+
+def draw_settings_window():
+    layout = [[sg.Text("Выберите токен:")],
+              [sg.Combo(tokens)],
+              [sg.Text("Введите новое количество:")],
+              [sg.InputText('100')],
+              [sg.Button("Ok"), sg.Cancel("Отмена")]]
+    window = sg.Window('Settings',
+                       layout,
+                       no_titlebar=True,
+                       keep_on_top=True,
+                       border_depth=0)
+    event, values = window.read()
+    print(event, values)
+    commit_settings_change(values)
+    window.close()
+
+
 def draw_window():
     col1 = sg.Column(
         [[sg.Text("TIME", size=(10, 1),
@@ -105,9 +112,9 @@ def draw_window():
         element_justification='center', key="COL1")
 
     # TODO: settings button should be replaced. And maybe even work
-    col2 = sg.Column([[sg.Text("edit",
+    col2 = sg.Column([[sg.Text("X",
                                enable_events=True,
-                               key="settings",
+                               key="Exit",
                                justification="right")]],
                      element_justification='right',
                      justification="right"
@@ -122,7 +129,8 @@ def draw_window():
                     text_color=TXT_COLOR,
                     key="total_sum",
                     size=(5,1),
-                    pad=((0, 0), (0, 0)))]],
+                    pad=((0, 0), (0, 0)))
+        ]],
         pad=((0, 20), (0, 0)))
 
     metrics = [draw_metrics(token) for token in tokens]
@@ -131,7 +139,7 @@ def draw_window():
                           justification='right',
                           element_justification='right')
 
-    text = f"Курс доллара: {str(usd_rub.get_price())}"
+    text = f"Курс доллара: {str(get_usd_rub())}"
     col3 = sg.Column(
         [[
             sg.Text(text)
@@ -139,7 +147,19 @@ def draw_window():
 
     col4 = sg.Column(
         [[
-            sg.Text("Время последнего обновления: ***", key="last_update_time")
+            sg.Text("add",
+                    enable_events=True,
+                    key="add_coin",
+                    justification="right"),
+            sg.Text("delete",
+                    enable_events=True,
+                    key="delete_coin",
+                    justification="right"),
+            sg.Text("edit",
+                    enable_events=True,
+                    key="settings",
+                    justification="right")
+
         ]])
     # TODO: col4 Text content is wrong displayed. Fix
 
@@ -171,7 +191,7 @@ def redraw_prices(window):
 
 def redraw_time(window, time):
     window['date'].update(time["current_date"])
-    window['last_update_time'].update(f'Время последнего обновления: {time["current_time"]}')
+    # window['last_update_time'].update(f'Время последнего обновления: {time["current_time"]}')
     window['time'].update(time["current_time"])
 
 
@@ -180,7 +200,7 @@ def main():
     refresh_rate = 500
 
     window = draw_window()
-    on_start(window)
+    #on_start(window)
 
     while True:
         event, values = window.read(timeout=refresh_rate)
@@ -198,6 +218,11 @@ def main():
             break
         if event == "settings":
             print("Settings pressed")
+            draw_settings_window()
+        if event == "add_coin":
+            from tokenManager.windows import draw_add_token_window
+            result = draw_add_token_window()
+            print(result)
 
 
 if __name__ == '__main__':

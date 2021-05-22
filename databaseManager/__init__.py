@@ -1,0 +1,2 @@
+from databaseManager.manager import db
+from databaseManager.manager import save_to_database

@@ -1,3 +1,2 @@
-from misc.coinmarketcap import Parser
-from misc.USDRUB import USDRUBParser
-from misc.mytokens import TokenLoader
+from .mytokens import TokenLoader
+from .timer import get_current_time
