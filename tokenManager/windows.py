@@ -1,7 +1,7 @@
 from app import sg
 from app import tokens
 from app import commit_settings_change
-
+from app import BG_COLOR, TXT_COLOR
 
 def draw_add_token_window():
     col = sg.Column([
@@ -14,14 +14,16 @@ def draw_add_token_window():
                       font=("Helvetica", 14)
                       ),
          sg.InputText("Количество",
-                      key="quantity",
+                      key="amount",
                       size=(10, 1),
                       font=("Helvetica", 14)),
-         sg.Ok("Ok")
+         sg.Ok("Ok"),
+         sg.Cancel("Cancel")
         ],
     ],
     element_justification="center",
     pad=((5,5), (0,0)))
+
 
     layout = [[col]]
 
@@ -36,14 +38,15 @@ def draw_add_token_window():
     event, values = window.read()
     print(event, values)
     window.close()
+    if event == "Cancel":
+        return False
     return values
-
 
 def draw_settings_window():
     layout = [[sg.Text("Выберите токен:")],
-              [sg.Combo(tokens)],
+              [sg.Combo(tokens, key="token")],
               [sg.Text("Введите новое количество:")],
-              [sg.InputText('100')],
+              [sg.InputText('100', key="amount")],
               [sg.Button("Ok"), sg.Cancel("Отмена")]]
     window = sg.Window('Settings',
                        layout,

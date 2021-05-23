@@ -2,6 +2,7 @@ import sqlite3
 from sqlite3 import OperationalError
 import time
 
+
 def get_time():
     return time.strftime("%m-%d-%Y|%T")
 
@@ -32,7 +33,8 @@ class Database:
     def add_data(self, token, *payload):
         command = f"INSERT INTO {token} VALUES (?, ?)"
         self.cur.execute(command, payload)
-        print("success")
+        print(f"successfully added to table {token} price: {payload}")
+
 
     def check_tables(self):
         self.cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
@@ -50,7 +52,7 @@ class Database:
         r = self.cur.execute(f"SELECT * FROM {token};").fetchall()
         print(r)
 
-    def manage_tables(self, token, price):
+    def save_to_database(self, token, price):
         exists = self.check_if_table_exists(token)
         timedate = get_time()
         token = self.translate_to_sql(token)

@@ -1,1 +1,1 @@
-my_coin_load = {'Bitcoin': '100', 'Ethereum': '100', '': '100'}
+my_coin_load = {'Bitcoin': '0', 'Ethereum': '1'}

@@ -5,6 +5,7 @@ from loader import tokens
 coin = Parser()
 usd_rub = USDRUBParser()
 
+
 # GET ALL PRICES FROM COINMARKETCAP
 def get_price(token_slug):
     price = coin.get_price(token_slug)
