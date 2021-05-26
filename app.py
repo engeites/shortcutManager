@@ -13,7 +13,8 @@ from database import save_to_database
 from windows import create_main_window, \
     create_add_token_window, \
     create_delete_token_window, \
-    create_settings_window
+    create_settings_window, \
+    refresh_layout
 
 from windows.main_window import redraw_time, create_layout
 from windows.settings_window import commit_settings_change
@@ -94,20 +95,26 @@ def redraw_prices(window):
 
 def new_row_layout():
     return [[sg.Text("Token name",
-                     justification="left"),
+                     font=("Arial", 10),
+                     background_color=BG_COLOR,
+                     text_color=TXT_COLOR,
+                     justification="left"
+                     ),
              sg.Text("****",
+                     font=("Arial", 10),
                      justification="right",
                      background_color=BG_COLOR,
                      text_color=TXT_COLOR,
-                     size=(8, 1),
+                     size=(8, 1)
                      )
              ]]
 
 
-def refresh_layout(result, window):
+"""def refresh_layout(result, window):
     print(result)
     window.extend_layout(window["RIGHT_COL"], new_row_layout())
     # window["RIGHT_COL"].BackgroundColor = BG_COLOR
+"""
 
 
 def main():
@@ -157,8 +164,7 @@ def main():
                                            justification="right",
                                            background_color=BG_COLOR,
                                            text_color=TXT_COLOR,
-                                           size=(8, 1),
-                                           auto_size_text=True)
+                                           size=(8, 1))
                                    ]])
             # TODO: СОХРАНЯТЬ ДАННЫЕ НОВОГО ТОКЕНА И ВНЕДРЯТЬ ИХ. КЛЮЧОМ НОВОГО ЭЛЕМЕНТА ТАКЖЕ ДОЛЖЕН БЫТЬ ТОКЕН
             #       СДЕЛАТЬ УДАЛЕНИЕ И ДОБАВЛЕНИЕ ТОКЕНА, ПОСМОТРЕТЬ, БУДЕТ ЛИ ОБНОВЛЯТЬСЯ ЗНАЧЕНИЕ СО ВРЕМЕНЕМ

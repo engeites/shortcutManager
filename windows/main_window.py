@@ -3,6 +3,8 @@ from loader import BG_COLOR, TXT_COLOR
 from parsers import get_usd_rub
 from loader import tokens
 from misc import get_current_time
+from windows.custom_window import MyWindow
+from parsers import get_price
 
 
 def create_layout():
@@ -117,17 +119,24 @@ def redraw_time(window, time):
     window['time'].update(time["current_time"])
 
 
+def refresh_layout(payload, window):
+    token = payload["token"]
+    price = get_price(token)
+    window.extend_layout(window["RIGHT_COL"], [draw_metrics(token)])
+    window[token].update(value=price)
+
+
 def draw_main_window(layout):
-    window = sg.Window(title="",
-                       layout=layout,
-                       margins=(0, 0),
-                       finalize=True,
-                       element_justification='center',
-                       right_click_menu=sg.MENU_RIGHT_CLICK_EXIT,
-                       keep_on_top=True,
-                       no_titlebar=True,
-                       grab_anywhere=True,
-                       alpha_channel=0.8)
+    window = MyWindow(title="",
+                      layout=layout,
+                      margins=(0, 0),
+                      finalize=True,
+                      element_justification='center',
+                      right_click_menu=sg.MENU_RIGHT_CLICK_EXIT,
+                      keep_on_top=True,
+                      no_titlebar=True,
+                      grab_anywhere=True,
+                      alpha_channel=0.8)
 
     time = get_current_time()
     redraw_time(window, time)

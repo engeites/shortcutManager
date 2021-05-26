@@ -1,6 +1,5 @@
 # Import base library GUI
 import PySimpleGUI as sg
-
 from misc import TokenLoader
 
 # GET TOKEN LIST
