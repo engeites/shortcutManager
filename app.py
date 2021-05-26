@@ -1,23 +1,25 @@
 from loader import sg
 
+from loader import TXT_COLOR, BG_COLOR
+
 # GET lIST OF TOKENS AND THEIR AMOUNT (DICT)
 from loader import tokens
 from settings import my_coin_load
 
 # BASIC DATABASE COMMANDS. !!!NOT USED YET!!!
-from databaseManager import save_to_database
+from database import save_to_database
 
 # FUNCTIONS TO CREATE DIFFERENT WINDOWS
 from windows import create_main_window, \
     create_add_token_window, \
-    create_delete_token_window,\
+    create_delete_token_window, \
     create_settings_window
 
-from windows.main_window import redraw_time
+from windows.main_window import redraw_time, create_layout
 from windows.settings_window import commit_settings_change
 
 # FUNCTIONS TO PARSE CURRENT PRICES AND EXCHANGE RATES
-from parsers import update_prices, get_usd_rub
+from parsers import update_prices
 
 # SOME AUXILIARY FUNCTIONS
 from misc import get_current_time, refresh_tokens
@@ -30,6 +32,7 @@ from config import MAIN_THEME
 current_prices = {}
 
 sg.theme(MAIN_THEME)
+
 
 # TODO: Add a decent logger finally
 
@@ -78,6 +81,8 @@ def redraw_prices(window):
     """This function updates current price for all the window['token'] Text fields when called
     :returns a dict {'Bitcoin': 40000,...} for saving to database"""
     payload = update_prices()
+    print(payload)
+    print(tokens)
     for token in tokens:
         window[token].update(payload[token])
 
@@ -85,6 +90,24 @@ def redraw_prices(window):
     current_prices = payload
     reload_total_sum(window)
     return payload
+
+
+def new_row_layout():
+    return [[sg.Text("Token name",
+                     justification="left"),
+             sg.Text("****",
+                     justification="right",
+                     background_color=BG_COLOR,
+                     text_color=TXT_COLOR,
+                     size=(8, 1),
+                     )
+             ]]
+
+
+def refresh_layout(result, window):
+    print(result)
+    window.extend_layout(window["RIGHT_COL"], new_row_layout())
+    # window["RIGHT_COL"].BackgroundColor = BG_COLOR
 
 
 def main():
@@ -119,6 +142,33 @@ def main():
                 commit_settings_change(result)
                 tokens.append(result['token'])
                 refresh_tokens(result["token"])
+                refresh_layout(result, window)
+        if event == "delete_coin":
+            window.extend_layout(window["RIGHT_COL"],
+                                 [[sg.Text("token",
+                                           font=("Arial", 10),
+                                           background_color=BG_COLOR,
+                                           text_color=TXT_COLOR,
+                                           justification="left"
+                                           ),
+
+                                   sg.Text("****",
+                                           font=("Arial", 10),
+                                           justification="right",
+                                           background_color=BG_COLOR,
+                                           text_color=TXT_COLOR,
+                                           size=(8, 1),
+                                           auto_size_text=True)
+                                   ]])
+            # TODO: СОХРАНЯТЬ ДАННЫЕ НОВОГО ТОКЕНА И ВНЕДРЯТЬ ИХ. КЛЮЧОМ НОВОГО ЭЛЕМЕНТА ТАКЖЕ ДОЛЖЕН БЫТЬ ТОКЕН
+            #       СДЕЛАТЬ УДАЛЕНИЕ И ДОБАВЛЕНИЕ ТОКЕНА, ПОСМОТРЕТЬ, БУДЕТ ЛИ ОБНОВЛЯТЬСЯ ЗНАЧЕНИЕ СО ВРЕМЕНЕМ
+            #       ВМЕСТЕ С ОСТАЛЬНЫМИ.
+
+            # TODO: ДОБАВИТЬ ДОКУМЕНТАЦИЮ В ПАКЕТЫ И МОДУЛИ В НИХ, ОПИСАТЬ КЛАССЫ.
+
+            # TODO: СДЕЛАТЬ ЛОГГИРОВАНИЕ!!!
+
+            # TODO: ПЕРЕИМЕНОВАТЬ НЕКОТОРЫЕ ИЗ ЭЛЕМЕНТОВ ГЛАВНОГО ОКНА, ДАТЬ БОЛЕЕ ГОВОРЯЩИЕ НАЗВАНИЯ
         if event == "status":
             sg.popup_ok(my_coin_load, non_blocking=True, keep_on_top=True)
         if event == "total_sum":
