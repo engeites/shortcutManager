@@ -37,6 +37,11 @@ class Parser:
         price = self.prettify_price(price)
         return price
 
+    def check_if_exists(self, token):
+        page = self.get_page(token)
+        if not page: return False
+        return True
+
 
 if __name__ == '__main__':
     a = Parser()

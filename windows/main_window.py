@@ -100,7 +100,8 @@ def draw_metrics(token):
                     font=("Arial", 10),
                     background_color=BG_COLOR,
                     text_color=TXT_COLOR,
-                    justification="left"
+                    justification="left",
+                    key=f"{token}_slug"
                     ),
 
             sg.Text("****",

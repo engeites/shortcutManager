@@ -1,7 +1,14 @@
-from loader import sg, BG_COLOR, TXT_COLOR
+from loader import sg, BG_COLOR
 
 
 class MyWindow(sg.Window):
+    """extend_layout method from base PySimpleGUI.Window class behaviour is unsuitable for this project,
+     so we have to overload it with this one. Changes are minor, we simply create column variable slightly
+     different way (give background_color and element_justification)
+
+     In future main window will be an instance of MyWindow class, not sg.Window. Other windows still
+     created the old way"""
+
     def extend_layout(self, container,  rows):
         """
         Adds new rows to an existing container element inside of this window

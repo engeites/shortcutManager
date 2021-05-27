@@ -12,6 +12,12 @@ def get_price(token_slug):
     return price
 
 
+def check_if_exists(token):
+    token_exists = coin.check_if_exists(token)
+    if token_exists: return True
+    return False
+
+
 def update_prices():
     payload = {}
     for token in tokens:

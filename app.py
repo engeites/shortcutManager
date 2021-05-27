@@ -9,18 +9,15 @@ from settings import my_coin_load
 # BASIC DATABASE COMMANDS. !!!NOT USED YET!!!
 from database import save_to_database
 
-# FUNCTIONS TO CREATE DIFFERENT WINDOWS
-from windows import create_main_window, \
-    create_add_token_window, \
-    create_delete_token_window, \
-    create_settings_window, \
-    refresh_layout
+from tokens import TokenDeleter
 
-from windows.main_window import redraw_time, create_layout
+# FUNCTIONS TO CREATE ALL WINDOWS
+from windows import *
+from windows.main_window import redraw_time
 from windows.settings_window import commit_settings_change
 
 # FUNCTIONS TO PARSE CURRENT PRICES AND EXCHANGE RATES
-from parsers import update_prices
+from parsers import update_prices, check_if_exists
 
 # SOME AUXILIARY FUNCTIONS
 from misc import get_current_time, refresh_tokens
@@ -110,13 +107,6 @@ def new_row_layout():
              ]]
 
 
-"""def refresh_layout(result, window):
-    print(result)
-    window.extend_layout(window["RIGHT_COL"], new_row_layout())
-    # window["RIGHT_COL"].BackgroundColor = BG_COLOR
-"""
-
-
 def main():
     counter = 0
 
@@ -146,29 +136,24 @@ def main():
         if event == "add_coin":
             result = create_add_token_window()
             if result:
-                commit_settings_change(result)
-                tokens.append(result['token'])
-                refresh_tokens(result["token"])
-                refresh_layout(result, window)
+                token_exists = check_if_exists(result['token'])
+                if token_exists:
+                    commit_settings_change(result)
+                    tokens.append(result['token'])
+                    refresh_tokens(result["token"])
+                    refresh_layout(result, window)
+                    redraw_prices(window)
+                else:
+                    sg.popup_ok(f"Токен: {result['token']} не найден на coinmarketcap")
         if event == "delete_coin":
-            window.extend_layout(window["RIGHT_COL"],
-                                 [[sg.Text("token",
-                                           font=("Arial", 10),
-                                           background_color=BG_COLOR,
-                                           text_color=TXT_COLOR,
-                                           justification="left"
-                                           ),
-
-                                   sg.Text("****",
-                                           font=("Arial", 10),
-                                           justification="right",
-                                           background_color=BG_COLOR,
-                                           text_color=TXT_COLOR,
-                                           size=(8, 1))
-                                   ]])
-            # TODO: СОХРАНЯТЬ ДАННЫЕ НОВОГО ТОКЕНА И ВНЕДРЯТЬ ИХ. КЛЮЧОМ НОВОГО ЭЛЕМЕНТА ТАКЖЕ ДОЛЖЕН БЫТЬ ТОКЕН
-            #       СДЕЛАТЬ УДАЛЕНИЕ И ДОБАВЛЕНИЕ ТОКЕНА, ПОСМОТРЕТЬ, БУДЕТ ЛИ ОБНОВЛЯТЬСЯ ЗНАЧЕНИЕ СО ВРЕМЕНЕМ
-            #       ВМЕСТЕ С ОСТАЛЬНЫМИ.
+            token_to_delete = create_delete_token_window()
+            if token_to_delete:
+                manager = TokenDeleter()
+                success = manager.delete_token(token_to_delete)
+                window[token_to_delete].update(visible=False)
+                window[f"{token_to_delete}_slug"].update(visible=False)
+                redraw_prices(window)
+                print(success)
 
             # TODO: ДОБАВИТЬ ДОКУМЕНТАЦИЮ В ПАКЕТЫ И МОДУЛИ В НИХ, ОПИСАТЬ КЛАССЫ.
 
