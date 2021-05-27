@@ -26,12 +26,25 @@ def create_layout():
 
     # TODO: settings button should be replaced. And maybe even work
     col2 = sg.Column([
-        [sg.Text("                                      "),
-         sg.Text("x",
-
+        [sg.Text(" "*60),
+         sg.Text("_",
+                 enable_events=True,
+                 key="hide_window",
+                 background_color="red",
+                 text_color="white",
+                 pad=((0, 10), (0, 0)),
+                 justification="right"),
+         sg.Text("u",
+                 enable_events=True,
+                 key="show_token_amounts",
+                 background_color="red",
+                 text_color="white",
+                 pad=((0, 10), (0, 0)),
+                 justification="right"),
+         sg.Text("❎",
                  enable_events=True,
                  key="Exit",
-                 background_color="red",
+                 background_color=TXT_COLOR,
                  text_color="white",
                  pad=((0, 0), (0, 0)),
                  justification="right")]],
@@ -61,27 +74,30 @@ def create_layout():
 
     col3 = sg.Column(
         [[
-            sg.Text("Курс доллара:", enable_events=True, key="status", pad=(5, 0)),
+            sg.Text("USD-RUB", enable_events=True, key="status", pad=(5, 0)),
             sg.Text(str(get_usd_rub()), pad=(5, 0), key="exchange_rate")
         ]],
-        element_justification="left")
+        element_justification="left",
+        justification='left')
 
     col4 = sg.Column(
         [[
-            sg.Text("добавить",
+            sg.Text(" "*30),
+            sg.Text("ADD",
                     enable_events=True,
                     key="add_coin",
                     justification="right"),
-            sg.Text("удалить",
+            sg.Text("DELETE",
                     enable_events=True,
                     key="delete_coin",
                     justification="right"),
-            sg.Text("редактировать",
+            sg.Text("EDIT AMOUNT",
                     enable_events=True,
                     key="settings",
                     justification="right")
 
-        ]])
+        ]], element_justification='right',
+            justification='right')
     # TODO: col4 Text content is wrong displayed. Fix
 
     top_col = sg.Column([[col1, col2]], element_justification="left", justification='left')

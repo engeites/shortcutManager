@@ -1,2 +1,8 @@
 Pancakeswap
+spartan-protocol
+pancakebunny
+1inch
 Ethereum
+Bitcoin
+Utrust
+Cardano

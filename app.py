@@ -26,8 +26,12 @@ from misc import get_current_time, refresh_tokens
 from config import REFRESH_PRICES_TIMEOUT, REFRESH_RATE
 from config import MAIN_THEME
 
-# A GLOBAL VARIABLE TO STORE CURRENT PRICES IN MEMORY
+# A GLOBAL DICTIONARY TO STORE CURRENT PRICES IN MEMORY
 current_prices = {}
+
+# A GLOBAL VARIABLE TO CHECK WHETHER AMOUNTS OR PRICES OF TOKENS ARE CURRENTLY SHOWN ON MAIN WINDOW
+# If True = token amounts are shown. If False - prices are shown
+amount_shown = False
 
 sg.theme(MAIN_THEME)
 
@@ -42,7 +46,7 @@ def save_all_to_database(payload):
     """
     for token in tokens:
         save_to_database(token, payload[token])
-
+# TODO: DATABASE LOGGING IS NOT WORKING. CURRENTLY NOTHING SAVED IN DB
 
 def on_start(window):
     """This function launches all the other functions needed to display data needed on the man window"""
@@ -56,8 +60,11 @@ def convert_usdrub(window):
     exchange_rate = float(window["exchange_rate"].DisplayText)
 
     if total_sum[0] == "$":
-        new_sum = float(total_sum[1:]) * exchange_rate
-        window["total_sum"].update(f"₽{round(new_sum)}")
+        try:
+            new_sum = round(float(total_sum[1:]) * exchange_rate)
+        except ValueError as e:
+            new_sum = "****"
+        window["total_sum"].update(f"₽{new_sum}")
 
     elif total_sum[0] == "₽":
         reload_total_sum(window)
@@ -71,8 +78,11 @@ def check_if_time_to_refresh_prices(counter):
 
 def reload_total_sum(window):
     """This function simply multiplies current_price by token amount for all the tokens in tokens list"""
-    total_summ = sum([current_prices[token] * float(my_coin_load[token]) for token in tokens])
-    window["total_sum"].update(f"${round(total_summ)}")
+    try:
+        total_summ = round(sum([current_prices[token] * float(my_coin_load[token]) for token in tokens]))
+    except KeyError as e:
+        total_summ = "****"
+    window["total_sum"].update(f"${total_summ}")
 
 
 def redraw_prices(window):
@@ -90,28 +100,76 @@ def redraw_prices(window):
     return payload
 
 
-def new_row_layout():
-    return [[sg.Text("Token name",
-                     font=("Arial", 10),
-                     background_color=BG_COLOR,
-                     text_color=TXT_COLOR,
-                     justification="left"
-                     ),
-             sg.Text("****",
-                     font=("Arial", 10),
-                     justification="right",
-                     background_color=BG_COLOR,
-                     text_color=TXT_COLOR,
-                     size=(8, 1)
-                     )
-             ]]
+# def new_row_layout():
+#     return [[sg.Text("Token name",
+#                      font=("Arial", 10),
+#                      background_color=BG_COLOR,
+#                      text_color=TXT_COLOR,
+#                      justification="left"
+#                      ),
+#              sg.Text("****",
+#                      font=("Arial", 10),
+#                      justification="right",
+#                      background_color=BG_COLOR,
+#                      text_color=TXT_COLOR,
+#                      size=(8, 1)
+#                      )
+#              ]]
+
+
+def swap_prices_and_amounts(window):
+    global amount_shown, current_prices
+    if not amount_shown:
+        for token in tokens:
+            window[token].update(value=my_coin_load[token])
+            amount_shown = True
+    else:
+        print(current_prices)
+        for token in tokens:
+            try:
+                window[token].update(current_prices[token])
+            except KeyError as e:
+                window[token].update("****")
+        sg.popup_ok("I didn't find token slug in current_prices dict. Are you in test mode?",
+                    non_blocking=True, keep_on_top=True)
+        amount_shown = False
+
+
+def hide_token(window, token_to_delete):
+    window[token_to_delete].update(visible=False)
+    window[f"{token_to_delete}_slug"].update(visible=False)
+    pass
+
+
+def hide_to_system_tray(window):
+    menu_def = ['BLANK', ['&Open', '---', '&Save', ['1', '2', ['a', 'b']], '&Properties', 'E&xit']]
+    tray = sg.SystemTray(menu=menu_def,  filename=r'icon.png')
+    while True:  # The event loop
+        menu_item = tray.read()
+        print(menu_item)
+        if menu_item == 'Exit':
+            break
+        elif menu_item == 'Open':
+            sg.popup('Menu item chosen', menu_item)
+        if menu_item == "__DOUBLE_CLICKED__":
+            window.UnHide()
+            tray.close()
+            break
+
+
+def check_if_amount_is_correct(amount):
+    try:
+        r = float(amount)
+        return True
+    except ValueError:
+        return False
 
 
 def main():
     counter = 0
 
     window = create_main_window()
-    on_start(window)
+    # on_start(window)
 
     while True:
         event, values = window.read(timeout=REFRESH_RATE)
@@ -137,23 +195,39 @@ def main():
             result = create_add_token_window()
             if result:
                 token_exists = check_if_exists(result['token'])
-                if token_exists:
+                amount_correct = check_if_amount_is_correct(result['amount'])
+                if token_exists and amount_correct:
+                    if result["token"] in tokens:
+                        sg.popup_ok(f"Токен: {result['token']} уже есть в вашем списке. Докупили? Измените количество."
+                                    f" Продали? Сначала удалите",
+                                    non_blocking=True, keep_on_top=True)
+                        continue
                     commit_settings_change(result)
                     tokens.append(result['token'])
                     refresh_tokens(result["token"])
                     refresh_layout(result, window)
                     redraw_prices(window)
-                else:
-                    sg.popup_ok(f"Токен: {result['token']} не найден на coinmarketcap")
+                elif not token_exists:
+                    sg.popup_ok(f"Токен: {result['token']} не найден на coinmarketcap",
+                                non_blocking=True, keep_on_top=True)
+                elif not amount_correct:
+                    sg.popup_ok(f"Вы ввели неправильное количество. Скорее всего, вообще не число",
+                                non_blocking=True, keep_on_top=True)
         if event == "delete_coin":
             token_to_delete = create_delete_token_window()
             if token_to_delete:
                 manager = TokenDeleter()
-                success = manager.delete_token(token_to_delete)
-                window[token_to_delete].update(visible=False)
-                window[f"{token_to_delete}_slug"].update(visible=False)
+                manager.delete_token(token_to_delete)
+                hide_token(window, token_to_delete)
+
                 redraw_prices(window)
-                print(success)
+
+        if event == "show_token_amounts":
+            swap_prices_and_amounts(window)
+
+        if event == "hide_window":
+            window.hide()
+            hide_to_system_tray(window)
 
             # TODO: ДОБАВИТЬ ДОКУМЕНТАЦИЮ В ПАКЕТЫ И МОДУЛИ В НИХ, ОПИСАТЬ КЛАССЫ.
 
