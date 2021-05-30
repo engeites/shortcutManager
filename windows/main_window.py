@@ -139,6 +139,8 @@ def redraw_time(window, time):
 def refresh_layout(payload, window):
     token = payload["token"]
     price = get_price(token)
+    if not price:
+        price = "No conn"
     window.extend_layout(window["RIGHT_COL"], [draw_metrics(token)])
     window[token].update(value=price)
 

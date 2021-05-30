@@ -1,1 +1,1 @@
-my_coin_load = {'Pancakeswap': '62.1', 'spartan-protocol': '159.894', 'pancakebunny': '8.073', '1inch': '47.88', 'Ethereum': '0.0433', 'Bitcoin': '0.00083', 'Utrust': '14.51492', 'Cardano': 'Количество'}
+my_coin_load = {'Pancakeswap': '62.1', '1inch': '47.88', 'Ethereum': '0.0433', 'Bitcoin': '0.00083', 'Utrust': '14.51492', 'Spartan-protocol': '159.8'}

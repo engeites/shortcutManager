@@ -31,5 +31,6 @@ def create_delete_token_window():
     window = draw_window(layout)
     event, values = window.read()
     window.close()
-    print(values)
+    if event == "Cancel":
+        return False
     return values['token']

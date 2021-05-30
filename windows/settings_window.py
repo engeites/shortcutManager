@@ -3,7 +3,13 @@ from tokens import TokenManager
 from settings import my_coin_load
 
 
-def commit_settings_change(payload):
+def commit_settings_change(payload: dict):
+    """
+    This function manages all config files with user data: my_loads.py and my_tokens.txt
+    It rewrites these files using new tokens and my_token_load variables
+    :param payload: dict {"token": 1245}
+    :return:
+    """
     token = payload["token"]
     amount = payload["amount"]
     editer = TokenManager(token, amount)

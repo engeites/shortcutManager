@@ -1,4 +1,5 @@
 import requests
+from requests.exceptions import ConnectionError
 from bs4 import BeautifulSoup
 
 
@@ -6,7 +7,10 @@ class USDRUBParser:
     __URL = "https://quote.rbc.ru/ticker/59111"
 
     def _get_page(self):
-        response = requests.get(self.__URL)
+        try:
+            response = requests.get(self.__URL)
+        except ConnectionError as e:
+            return False
         if response.status_code == 200:
             return response
         else:
@@ -28,9 +32,10 @@ class USDRUBParser:
         price = float(price)
         return price
 
-
     def get_price(self):
         page = self._get_page()
+        if not page:
+            return False
         soup = self.parse_page(page)
         price = self.parse_price(soup)
         price = self.prettify_price(price)
@@ -39,4 +44,3 @@ class USDRUBParser:
 
 if __name__ == '__main__':
     parser = USDRUBParser()
-    print(parser.get_price())

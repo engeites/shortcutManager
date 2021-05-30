@@ -46,6 +46,8 @@ def save_all_to_database(payload):
     """
     for token in tokens:
         save_to_database(token, payload[token])
+
+
 # TODO: DATABASE LOGGING IS NOT WORKING. CURRENTLY NOTHING SAVED IN DB
 
 def on_start(window):
@@ -89,8 +91,6 @@ def redraw_prices(window):
     """This function updates current price for all the window['token'] Text fields when called
     :returns a dict {'Bitcoin': 40000,...} for saving to database"""
     payload = update_prices()
-    print(payload)
-    print(tokens)
     for token in tokens:
         window[token].update(payload[token])
 
@@ -100,23 +100,6 @@ def redraw_prices(window):
     return payload
 
 
-# def new_row_layout():
-#     return [[sg.Text("Token name",
-#                      font=("Arial", 10),
-#                      background_color=BG_COLOR,
-#                      text_color=TXT_COLOR,
-#                      justification="left"
-#                      ),
-#              sg.Text("****",
-#                      font=("Arial", 10),
-#                      justification="right",
-#                      background_color=BG_COLOR,
-#                      text_color=TXT_COLOR,
-#                      size=(8, 1)
-#                      )
-#              ]]
-
-
 def swap_prices_and_amounts(window):
     global amount_shown, current_prices
     if not amount_shown:
@@ -124,29 +107,33 @@ def swap_prices_and_amounts(window):
             window[token].update(value=my_coin_load[token])
             amount_shown = True
     else:
-        print(current_prices)
+        # print(current_prices)
         for token in tokens:
             try:
                 window[token].update(current_prices[token])
             except KeyError as e:
                 window[token].update("****")
-        sg.popup_ok("I didn't find token slug in current_prices dict. Are you in test mode?",
-                    non_blocking=True, keep_on_top=True)
+                sg.popup_ok("I didn't find token slug in current_prices dict. Are you in test mode?",
+                            non_blocking=True, keep_on_top=True)
         amount_shown = False
 
 
 def hide_token(window, token_to_delete):
+    """
+    Simply hides token from params on main window
+    :param window: main window object
+    :param token_to_delete: str(token)
+    :return:
+    """
     window[token_to_delete].update(visible=False)
     window[f"{token_to_delete}_slug"].update(visible=False)
-    pass
 
 
 def hide_to_system_tray(window):
     menu_def = ['BLANK', ['&Open', '---', '&Save', ['1', '2', ['a', 'b']], '&Properties', 'E&xit']]
-    tray = sg.SystemTray(menu=menu_def,  filename=r'icon.png')
+    tray = sg.SystemTray(menu=menu_def, filename=r'icon.png')
     while True:  # The event loop
         menu_item = tray.read()
-        print(menu_item)
         if menu_item == 'Exit':
             break
         elif menu_item == 'Open':
@@ -166,18 +153,26 @@ def check_if_amount_is_correct(amount):
 
 
 def main():
+    # counter variable to check if it is time to update prices on main screen. Default: 5 min
     counter = 0
-
+    # TODO: Переделать логику запуска приложения - заставить парсить данные в одном процессе, а после
+    #   записывать  в глобальную переменную. Далее уже из этой глобальной переменной рисовать окно.
+    #   В процесс парсинга имплементировать ProgressBar  показывать окно загрузки перед основным окном.
     window = create_main_window()
-    # on_start(window)
+    on_start(window)
 
     while True:
         event, values = window.read(timeout=REFRESH_RATE)
+        # Get time to update DATE and TIME elements on main window
         time = get_current_time()
         counter += 100
+        # counter must reach 1000 * 60 * 5 for time_to_update_prices to become True
         time_to_update_prices = check_if_time_to_refresh_prices(counter)
+
         if time_to_update_prices:
             counter = 0
+            # redraw_prices is a big function, that parses data from coinmarketcap and updates
+            # most of data on main window (token prices and total sum)
             payload = redraw_prices(window)
             save_all_to_database(payload)
             redraw_time(window, time)
@@ -186,40 +181,46 @@ def main():
 
         if event == "Exit":
             break
+
         if event == "settings":
             changes_made = create_settings_window()
             if changes_made:
                 redraw_prices(window)
                 reload_total_sum(window)
+
+        # TODO: add a function that will get a line of text and popup it. It's better to
+        #   create a dict or list of all texts and just pass short phrase like
+        #   show_popup(texts["token_not_exists"] or show_popup(texts["amount_format_wrong"])
         if event == "add_coin":
-            result = create_add_token_window()
-            if result:
-                token_exists = check_if_exists(result['token'])
-                amount_correct = check_if_amount_is_correct(result['amount'])
+            new_token_data = create_add_token_window()
+            if new_token_data:
+                token_exists = check_if_exists(new_token_data['token'])
+                amount_correct = check_if_amount_is_correct(new_token_data['amount'])
                 if token_exists and amount_correct:
-                    if result["token"] in tokens:
-                        sg.popup_ok(f"Токен: {result['token']} уже есть в вашем списке. Докупили? Измените количество."
+                    # Check if we already have this token in tokens list
+                    if new_token_data["token"] in tokens:
+                        sg.popup_ok(f"Токен: {new_token_data['token']} уже есть в вашем списке. Докупили? Измените количество."
                                     f" Продали? Сначала удалите",
                                     non_blocking=True, keep_on_top=True)
                         continue
-                    commit_settings_change(result)
-                    tokens.append(result['token'])
-                    refresh_tokens(result["token"])
-                    refresh_layout(result, window)
+                    commit_settings_change(new_token_data)
+                    tokens.append(new_token_data['token'])
+                    refresh_tokens(new_token_data["token"])
+                    refresh_layout(new_token_data, window)
                     redraw_prices(window)
                 elif not token_exists:
-                    sg.popup_ok(f"Токен: {result['token']} не найден на coinmarketcap",
+                    sg.popup_ok(f"Токен: {new_token_data['token']} не найден на coinmarketcap",
                                 non_blocking=True, keep_on_top=True)
                 elif not amount_correct:
                     sg.popup_ok(f"Вы ввели неправильное количество. Скорее всего, вообще не число",
                                 non_blocking=True, keep_on_top=True)
+
         if event == "delete_coin":
             token_to_delete = create_delete_token_window()
             if token_to_delete:
                 manager = TokenDeleter()
                 manager.delete_token(token_to_delete)
                 hide_token(window, token_to_delete)
-
                 redraw_prices(window)
 
         if event == "show_token_amounts":

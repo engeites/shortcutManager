@@ -26,4 +26,7 @@ def update_prices():
 
 
 def get_usd_rub():
+    price = usd_rub.get_price()
+    if not price:
+        return "No conn"
     return usd_rub.get_price()

@@ -1,12 +1,16 @@
 import requests
 from bs4 import BeautifulSoup
+from requests.exceptions import ConnectionError
 
 
 class Parser:
     URL = "https://coinmarketcap.com/currencies/"
 
     def get_page(self, token_slug):
-        response = requests.get(self.URL + token_slug)
+        try:
+            response = requests.get(self.URL + token_slug)
+        except ConnectionError:
+            return False
         if response.status_code == 200:
             return response
         else:
@@ -30,6 +34,7 @@ class Parser:
 
     def get_price(self, token_slug):
         page = self.get_page(token_slug)
+
         if not page:
             return False
         soup = self.parse_page(page)
