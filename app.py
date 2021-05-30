@@ -1,6 +1,8 @@
-from loader import sg
+from time import sleep
 
-from loader import TXT_COLOR, BG_COLOR
+from loader import sg
+from loader import logger, price_logger
+
 
 # GET lIST OF TOKENS AND THEIR AMOUNT (DICT)
 from loader import tokens
@@ -50,9 +52,10 @@ def save_all_to_database(payload):
 
 # TODO: DATABASE LOGGING IS NOT WORKING. CURRENTLY NOTHING SAVED IN DB
 
-def on_start(window):
+def on_start():
     """This function launches all the other functions needed to display data needed on the man window"""
-    redraw_prices(window)
+    # redraw_prices(window)
+    load_prices_on_startup()
 
 
 # TODO: maybe move this func to some module?
@@ -80,6 +83,7 @@ def check_if_time_to_refresh_prices(counter):
 
 def reload_total_sum(window):
     """This function simply multiplies current_price by token amount for all the tokens in tokens list"""
+    print(f'current_prices: {current_prices}\n my_coin_load: {my_coin_load}')
     try:
         total_summ = round(sum([current_prices[token] * float(my_coin_load[token]) for token in tokens]))
     except KeyError as e:
@@ -87,12 +91,36 @@ def reload_total_sum(window):
     window["total_sum"].update(f"${total_summ}")
 
 
+def load_prices_on_startup():
+    r = len(tokens)
+    loading_window = create_loading_window(r)
+    progress_bar = loading_window['progressbar']
+    global current_prices
+
+    for j, token in enumerate(tokens):
+        token_price = update_prices([token]) # {'bitcoin': 125512}
+        logger.debug(token_price)
+        current_prices[token] = token_price[token]
+        event, values = loading_window.read(timeout=10)
+        if event == 'Cancel' or event == sg.WIN_CLOSED:
+            pass
+        progress_bar.UpdateBar(j+1)
+    loading_window.close()
+
+
+def initial_price_drawing(window):
+    for token in tokens:
+        window[token].update(current_prices[token])
+
+
+
 def redraw_prices(window):
     """This function updates current price for all the window['token'] Text fields when called
     :returns a dict {'Bitcoin': 40000,...} for saving to database"""
-    payload = update_prices()
+    payload = update_prices(tokens)
     for token in tokens:
         window[token].update(payload[token])
+        price_logger.info(f"{token} = {payload[token]}")
 
     global current_prices
     current_prices = payload
@@ -132,6 +160,7 @@ def hide_token(window, token_to_delete):
 def hide_to_system_tray(window):
     menu_def = ['BLANK', ['&Open', '---', '&Save', ['1', '2', ['a', 'b']], '&Properties', 'E&xit']]
     tray = sg.SystemTray(menu=menu_def, filename=r'icon.png')
+    logger.debug("APP is hidden to tray")
     while True:  # The event loop
         menu_item = tray.read()
         if menu_item == 'Exit':
@@ -141,6 +170,7 @@ def hide_to_system_tray(window):
         if menu_item == "__DOUBLE_CLICKED__":
             window.UnHide()
             tray.close()
+            logger.debug("tray icon closed, main window maximized")
             break
 
 
@@ -158,8 +188,12 @@ def main():
     # TODO: Переделать логику запуска приложения - заставить парсить данные в одном процессе, а после
     #   записывать  в глобальную переменную. Далее уже из этой глобальной переменной рисовать окно.
     #   В процесс парсинга имплементировать ProgressBar  показывать окно загрузки перед основным окном.
+
+    on_start()
     window = create_main_window()
-    on_start(window)
+    # redraw_prices(window)
+    initial_price_drawing(window)
+    reload_total_sum(window)
 
     while True:
         event, values = window.read(timeout=REFRESH_RATE)

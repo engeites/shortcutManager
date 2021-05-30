@@ -1,7 +1,6 @@
 from .coinmarketcap import Parser
 from .USDRUB import USDRUBParser
 
-from loader import tokens
 coin = Parser()
 usd_rub = USDRUBParser()
 
@@ -18,9 +17,9 @@ def check_if_exists(token):
     return False
 
 
-def update_prices():
+def update_prices(tokens_to_parse):
     payload = {}
-    for token in tokens:
+    for token in tokens_to_parse:
         payload[token] = get_price(token)
     return payload
 
