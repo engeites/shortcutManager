@@ -1,2 +1,2 @@
 # shortcutManager
-This is a simple app to control crypro investments
+This is a test app that should let me easier controll my crypto losses

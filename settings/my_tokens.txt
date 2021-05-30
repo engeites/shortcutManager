@@ -1,2 +1,6 @@
-Bitcoin
+1inch
 Ethereum
+Bitcoin
+Pancakeswap
+Utrust
+Spartan-protocol
