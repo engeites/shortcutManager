@@ -2,6 +2,18 @@ from loader import sg
 from loader import logger, price_logger, user_control
 
 
+# TODO: 1. ИСПРАВИТЬ НАДПИСИ В ОКНАХ add_token, delete_token.
+#   2. Добавить поддержку языка во все окна
+#   3. Переместить my_coin_loads и другие глоб. переменные в базу данных, не надо хранить в файлах
+#   4. Доработать вид и функционал details_window
+#   5. Исправить ситуацию с перетаскиванием окна при попытке выделения текста в inputText
+#   6. Начать, наконец, хранить историю цен в базе данных
+#   7. Добавляем графики или нет????
+#   8. Переименовать некоторые из элементов главного и других окон, дать более говорящие ключи
+#   9. Обновить и добавить документацию в модули и функции
+#   10. Оптимизировать main loop, постараться создать функции-менеджеры вместо длинных описаний в главном цикле
+
+
 # GET lIST OF TOKENS AND THEIR AMOUNT (DICT)
 from loader import tokens
 from settings import my_coin_load
@@ -267,11 +279,7 @@ def main():
             elif current_lang == "RU":
                 r= set_interface_lang(current_lang)
                 window['swap_lang'].update(value=r)
-            # TODO: ДОБАВИТЬ ДОКУМЕНТАЦИЮ В ПАКЕТЫ И МОДУЛИ В НИХ, ОПИСАТЬ КЛАССЫ.
 
-            # TODO: СДЕЛАТЬ ЛОГГИРОВАНИЕ!!!
-
-            # TODO: ПЕРЕИМЕНОВАТЬ НЕКОТОРЫЕ ИЗ ЭЛЕМЕНТОВ ГЛАВНОГО ОКНА, ДАТЬ БОЛЕЕ ГОВОРЯЩИЕ НАЗВАНИЯ
         if event == "status":
             sg.popup_ok(my_coin_load, non_blocking=True, keep_on_top=True)
         if event == "total_sum":

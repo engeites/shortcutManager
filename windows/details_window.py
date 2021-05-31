@@ -1,4 +1,11 @@
-from loader import sg
+# from loader import sg
+import PySimpleGUI as sg
+
+GRAPH_WIDTH = 160  # each individual graph size in pixels
+GRAPH_HEIGHT = 160
+TRANSPARENCY = .8  # how transparent the window looks. 0 = invisible, 1 = normal window
+NUM_COLS = 4
+POLL_FREQUENCY = 1500  #
 
 
 def check_input(value):
@@ -9,33 +16,134 @@ def check_input(value):
         return False
 
 
-def calculate_expenses(av_price, amount):
-    print(f'multiplying: {av_price} to {amount}')
-    return float(av_price) * float(amount)
+def better_layout():
+    top_col = sg.Column(
+        [
+            [sg.Text("TOKEN DETAILS",
+                     auto_size_text=True,
+                     size=(30, 1),
+                     font=("Helvetica", 16),
+                     justification='center',
+                     key="token",
+                     pad=((5, 5), (5, 10)))]
+        ],
+        justification='center'
+    )
 
+    col1 = sg.Column(
+        [
+            [sg.Text("Amount:", size=(10, 1), background_color="white", text_color='black')],
+            [sg.Text("Current price:", background_color="white", text_color='black')],
+            [sg.Text("In USDT:", background_color="white", text_color='black')]
+        ],
+        background_color='white',
+        element_justification="left"
+    )
 
-def calculate_current_usdt(curr_price, amount):
-    return float(curr_price) * float(amount)
+    col2 = sg.Column(
+        [
+            [sg.Text("****", key="amount", size=(12, 1), justification='right', background_color="white",
+                     text_color='black')],
+            [sg.Text("****", key="curr_price", size=(12, 1), justification='right', background_color="white",
+                     text_color='black')],
+            [sg.Text("****", key="curr_USDT", size=(12, 1), justification='right', background_color="white",
+                     text_color='black')]
+        ],
+        background_color='white',
+        element_justification="right"
+    )
 
+    col3 = sg.Column(
+        [
+            [sg.Text("Average price:", size=(10, 1), background_color="white", key="av_pr", enable_events=True,
+                     text_color='black')],
+            [sg.Text("USDT spent:", background_color="white", text_color='black')],
+            [sg.Text("Difference:", background_color="white", text_color='black')],
+            [sg.Text("", background_color="white")]
+        ],
+        background_color='white',
+        element_justification="left"
+    )
 
-def create_layout(payload):
+    col4 = sg.Column(
+        [
+            [sg.Text("****", key="av_price", size=(12, 1), justification='right', background_color="white",
+                     text_color='black'),
+             sg.InputText("", visible=False, size=(4, 1), key="set_price"),
+             sg.Button("Ok", visible=False, bind_return_key=True, key="set_av_price")],
+            [sg.Text("****", key="USDT_spent", size=(12, 1), justification='right', background_color="white",
+                     text_color='black')],
+            [sg.Text("****", key="difference", size=(12, 1), justification='right', background_color="white",
+                     text_color='black')],
+            [sg.Text("", background_color="white")]
+        ],
+        background_color='white',
+        element_justification="right"
+    )
+
+    bot_col = sg.Column([
+        [sg.Text("OUTCOME:", font=("Helvetica", 12), text_color='white'),
+         sg.Text("?", key="graphpic", font=("Helvetica", 16)),
+         sg.Text("$***", size=(20, 1), key="result", font=("Helvetica", 12)), sg.Button("Close", key="Exit")]
+    ],
+        pad=((0, 5), (5, 5)))
+
+    left_col = sg.Column([[sg.Text("", background_color="white")], [col1, col2],
+                          [sg.Text("", background_color='white', pad=(0, 0), text_color="black")]],
+                         background_color='white')
+    right_col = sg.Column([[col3, col4]], background_color='white')
+
+    graph_col = sg.Column(
+        [[sg.Graph((GRAPH_WIDTH, GRAPH_HEIGHT), (0, 0), (GRAPH_WIDTH, 100), background_color='white', key='_GRAPH_')]],
+        vertical_alignment='top', pad=((5, 5), (5, 5)))
+
+    main_col = sg.Column(
+        [
+            [sg.Column([[left_col]], background_color='white')],
+            [sg.Column([[right_col]], background_color='white')]
+        ],
+        pad=((5, 5), (5, 5))
+    )
+
     layout = [
-        [sg.Text(f"{payload['token'].upper()} TOKEN DETAILS",
-                 justification='center',
-                 font=('Helvetica', 16))],
-        [sg.Text('Amount:'), sg.Text(payload["amount"], key='amount')],
-        [sg.Text('Buying price:'), sg.Text("Not Set", size=(10, 1), key='av_price'),
-         sg.Button("Set", key="set_buy_price"),
-         sg.InputText("hell", size=(8, 1), key="new_price", visible=False),
-         sg.Button("Save", key="submit_price", visible=False)],
-        [sg.Text("USDT spent in total:"), sg.Text("***", size=(10, 1), key='total_usdt')],
-        [sg.Text('Current price:'), sg.Text(payload['price'], size=(10, 1), key='curr_price')],
-        [sg.Text('Current USDT:'), sg.Text("***", size=(10, 1), key="current_usdt")],
-        [sg.Text('Difference:'), sg.Text('****', key='difference')],
-        [sg.Text('Outcome:'), sg.Text("N/A", key="outcome")],
-        [sg.Button('Cancel', key="Cancel")]
-    ]
+        [top_col],
+        [main_col, graph_col],
+        [bot_col]]
     return layout
+
+
+def calculate(av_price, window):
+    amount = window['amount'].DisplayText
+    bought_at = window['curr_USDT'].DisplayText
+    summ = round(float(amount) * float(av_price))
+    window['USDT_spent'].update(value=summ)
+    diff = float(bought_at) - summ
+    window['difference'].update(value=f"${diff}")
+    if diff > 0:
+        window["graphpic"].update(value="📈", text_color='green')
+        result_text = f"${diff} earned for now"
+        window["result"].update(value=result_text)
+    elif diff < 0:
+        window["graphpic"].update(value="📉", text_color='red')
+        result_text = f"${diff} lost for now"
+        window["result"].update(value=result_text)
+
+
+def on_start(payload, window):
+    token = payload['token']
+    price = payload['price']
+    amount = payload['amount']
+
+    def calculate_current_usdt(curr_price, amount):
+        return round(float(curr_price) * float(amount))
+
+    usdt_spent = calculate_current_usdt(price, amount)
+
+    window["amount"].update(value=amount)
+    window["curr_price"].update(value=price)
+    window["curr_price"].update(value=price)
+    window["token"].update(value=(f"{token} details").upper())
+    window["curr_USDT"].update(value=usdt_spent)
 
 
 def draw_window(layout):
@@ -45,40 +153,52 @@ def draw_window(layout):
                        no_titlebar=True,
                        keep_on_top=True,
                        border_depth=0,
-                       grab_anywhere=True
+                       grab_anywhere=True,
+                       finalize=True
                        )
     return window
 
 
 def create_details_window(payload):
-    layout = create_layout(payload)
+    layout = better_layout()
     window = draw_window(layout)
-
+    on_start(payload, window)
     while True:
-        event, values = window.read()
-        if event == "set_buy_price":
-            window['new_price'].update(visible=True)
-            window['submit_price'].update(visible=True)
+        event, values = window.read(timeout=50)
+        if event == "Exit":
+            break
+        if event == "av_pr":
+            window["av_price"].update(visible=False)
+            window["set_price"].update(visible=True)
+        if event == "set_av_price":
+            price = values["set_price"]
+            window["av_price"].update(visible=True, value=price)
+            window["set_price"].update(visible=False)
+            calculate(price, window)
 
-        if event == 'submit_price':
-            if values['new_price']:
-                av_price = values['new_price']
-                price_format_correct = check_input(av_price)
-                if price_format_correct:
-                    window['av_price'].update(value=av_price)
-                    usdt_spent = calculate_expenses(av_price, window['amount'].DisplayText)
-                    current_sum = calculate_current_usdt(window['curr_price'].DisplayText, window['amount'].DisplayText)
-                    window['current_usdt'].update(value=current_sum)
-                    window['total_usdt'].update(value=usdt_spent)
-                    diff = current_sum - usdt_spent
-                    window['difference'].update(value=diff)
-                    if diff > 0:
-                        window['outcome'].update(value='📈')
-                    else:
-                        window['outcome'].update(value='📉')
-            window['new_price'].update(visible=False)
-            window['submit_price'].update(visible=False)
+    window.close()
 
-        if event == "Cancel":
-            window.close()
-            return False
+
+if __name__ == '__main__':
+    payload = {
+        "token": "Pancakebunny",
+        "price": 21.25,
+        "amount": 8.08}
+
+    layout = better_layout()
+    window = draw_window(layout)
+    on_start(payload, window)
+    while True:
+        event, values = window.read(timeout=50)
+        if event == "Exit":
+            break
+        if event == "av_pr":
+            window["av_price"].update(visible=False)
+            window["set_price"].update(visible=True)
+        if event == "set_av_price":
+            price = values["set_price"]
+            window["av_price"].update(visible=True, value=price)
+            window["set_price"].update(visible=False)
+            calculate(price, window)
+
+    window.close()
