@@ -1,5 +1,3 @@
-from time import sleep
-
 from loader import sg
 from loader import logger, price_logger, user_control
 
@@ -107,23 +105,6 @@ def reload_total_sum(window):
     window["total_sum"].update(f"${total_summ}")
 
 
-# def load_prices_on_startup():
-#     r = len(tokens)
-#     loading_window = create_loading_window(r)
-#     progress_bar = loading_window['progressbar']
-#     global current_prices
-#
-#     for j, token in enumerate(tokens):
-#         token_price = update_prices([token]) # {'bitcoin': 125512}
-#         logger.debug(token_price)
-#         current_prices[token] = token_price[token]
-#         event, values = loading_window.read(timeout=10)
-#         if event == 'Cancel' or event == sg.WIN_CLOSED:
-#             pass
-#         progress_bar.UpdateBar(j+1)
-#     loading_window.close()
-
-
 def initial_price_drawing(window):
     for token in tokens:
         window[token].update(current_prices[token])
@@ -156,8 +137,8 @@ def swap_prices_and_amounts(window):
                 window[token].update(current_prices[token])
             except KeyError as e:
                 window[token].update("****")
-                sg.popup_ok("I didn't find token slug in current_prices dict. Are you in test mode?",
-                            non_blocking=True, keep_on_top=True)
+        sg.popup_ok("I didn't find token slug in current_prices dict. Are you in test mode?",
+                    non_blocking=True, keep_on_top=True)
         amount_shown = False
 
 
@@ -257,12 +238,9 @@ def main():
                     redraw_prices(window)
                 elif not token_exists:
                     show_popup("token_not_exists", token={new_token_data['token']})
-                    # sg.popup_ok(f"Токен: {new_token_data['token']} не найден на coinmarketcap",
-                    #             non_blocking=True, keep_on_top=True)
+
                 elif not amount_correct:
                     show_popup("amount_not_correct")
-                    # sg.popup_ok(f"Вы ввели неправильное количество. Скорее всего, вообще не число",
-                    #             non_blocking=True, keep_on_top=True)
 
         if event == "delete_coin":
             token_to_delete = create_delete_token_window()
@@ -298,6 +276,14 @@ def main():
             sg.popup_ok(my_coin_load, non_blocking=True, keep_on_top=True)
         if event == "total_sum":
             convert_usdrub(window)
+        if event in tokens:
+            payload = {
+                "token": event,
+                "price": window[event].DisplayText,
+                "amount": my_coin_load[event]}
+
+            create_details_window(payload)
+
 
 if __name__ == '__main__':
     main()

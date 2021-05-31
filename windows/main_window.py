@@ -12,7 +12,6 @@ def create_layout():
         [[sg.Text("DATE", size=(10, 1),
                   key="date",
                   font=('Arial', 12),
-
                   pad=((0, 0), (0, 0)),
                   justification="left"),
           sg.Text("TIME", size=(10, 1),
@@ -26,25 +25,23 @@ def create_layout():
 
     col2 = sg.Column([
         [sg.Text(" "*60),
-         sg.Text("EN",
+         sg.Text("o",
                  enable_events=True,
-                 key="swap_lang",
-                 background_color="red",
-                 text_color="white",
+                 key="show_token_amounts",
+                 text_color="grey",
                  pad=((0, 10), (0, 0)),
                  justification="right"),
          sg.Text("_",
                  enable_events=True,
                  key="hide_window",
-                 background_color="red",
-                 text_color="white",
+
+                 text_color="grey",
                  pad=((0, 10), (0, 0)),
                  justification="right"),
-         sg.Text("u",
+         sg.Text("EN",
                  enable_events=True,
-                 key="show_token_amounts",
-                 background_color="red",
-                 text_color="white",
+                 key="swap_lang",
+                 text_color="grey",
                  pad=((0, 10), (0, 0)),
                  justification="right"),
          sg.Text("❎",
@@ -72,10 +69,11 @@ def create_layout():
         pad=((0, 20), (0, 0)))
 
     metrics = [draw_metrics(token) for token in tokens]
-    right_col = sg.Column(metrics, pad=((0, 0), (0, 0)),
+    right_col = sg.Column(metrics,
                           background_color=BG_COLOR,
                           justification='right',
                           element_justification='right',
+                          pad=((0, 20), (5, 5)),
                           key="RIGHT_COL")
 
     col3 = sg.Column(
@@ -94,11 +92,13 @@ def create_layout():
                     key="add_coin",
                     font=("Helvetica", 8, 'italic'),
                     justification="right"),
+            sg.VerticalSeparator(),
             sg.Text("DELETE",
                     enable_events=True,
                     key="delete_coin",
                     font=("Helvetica", 8, 'italic'),
                     justification="right"),
+            sg.VerticalSeparator(),
             sg.Text("EDIT AMOUNT",
                     enable_events=True,
                     font=("Helvetica", 8, 'italic'),
@@ -109,7 +109,7 @@ def create_layout():
             justification='right')
 
     top_col = sg.Column([[col1, col2]], element_justification="left", justification='left')
-    mid_col = sg.Column([[left_col, right_col]], background_color=BG_COLOR, key="MID_COL")
+    mid_col = sg.Column([[left_col, right_col]], background_color=BG_COLOR, key="MID_COL", expand_x=True, pad=(0, 0))
     bottom_col = sg.Column([[col3, col4]])
 
     layout = [[top_col],
@@ -133,6 +133,7 @@ def draw_metrics(token):
                     justification="right",
                     background_color=BG_COLOR,
                     text_color=TXT_COLOR,
+                    enable_events=True,
                     size=(8, 1),
                     auto_size_text=True,
                     key=token)]

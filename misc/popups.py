@@ -33,4 +33,9 @@ def show_popup(command, **qwargs):
     r = set_lang_settings()
     COMMANDS = check_lang_settings(r)
     sg.popup_ok(COMMANDS[command],
-                non_blocking=True, keep_on_top=True)
+                no_titlebar = True,
+                non_blocking=True,
+                keep_on_top=True,
+                font=("Helvetica", 12),
+                grab_anywhere=True,
+                )

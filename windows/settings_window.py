@@ -48,6 +48,7 @@ def create_settings_window():
             window.close()
             return True
         user_control.info(f"User tried to change amount of {values['token']} to {values['amount']}")
+        window.close()
         return False
     elif event == "Cancel":
         window.close()

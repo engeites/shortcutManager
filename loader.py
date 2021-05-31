@@ -13,9 +13,6 @@ price_logger = logging.getLogger('price_logger')
 user_control = logging.getLogger('user_control')
 
 
-
-logger.debug("App is running")
-
 # GET TOKEN LIST
 token_loader = TokenLoader()
 tokens = token_loader.get_tokens()

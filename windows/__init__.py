@@ -3,3 +3,4 @@ from .settings_window import create_settings_window
 from .add_token_window import create_add_token_window
 from .delete_token_window import create_delete_token_window
 from .loading_window import create_loading_window, load_prices_on_startup
+from .details_window import create_details_window
