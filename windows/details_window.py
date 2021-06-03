@@ -1,6 +1,8 @@
 # from loader import sg
 import PySimpleGUI as sg
 
+from database import save_to_av_prices, load_from_database
+
 GRAPH_WIDTH = 160  # each individual graph size in pixels
 GRAPH_HEIGHT = 160
 TRANSPARENCY = .8  # how transparent the window looks. 0 = invisible, 1 = normal window
@@ -82,7 +84,7 @@ def better_layout():
     )
 
     bot_col = sg.Column([
-        [sg.Text("OUTCOME:", font=("Helvetica", 12), text_color='white'),
+        [sg.Text("OUTCOME:", font=("Helvetica", 12), text_color='grey'),
          sg.Text("?", key="graphpic", font=("Helvetica", 16)),
          sg.Text("$***", size=(20, 1), key="result", font=("Helvetica", 12)), sg.Button("Close", key="Exit")]
     ],
@@ -130,20 +132,40 @@ def calculate(av_price, window):
 
 
 def on_start(payload, window):
-    token = payload['token']
-    price = payload['price']
-    amount = payload['amount']
 
     def calculate_current_usdt(curr_price, amount):
         return round(float(curr_price) * float(amount))
 
-    usdt_spent = calculate_current_usdt(price, amount)
+    token = payload['token']
+    price = payload['price']
+    amount = payload['amount']
+
+    usdt_for_now = calculate_current_usdt(price, amount)
+
+    current_av_price_data = load_from_database(token.upper())
+    if not current_av_price_data:
+        current_av_price_data = 0
+        usdt_spent = 0
+        diff = 0
+    else:
+        usdt_spent = round(current_av_price_data * amount)
+        diff = usdt_for_now - usdt_spent
 
     window["amount"].update(value=amount)
     window["curr_price"].update(value=price)
-    window["curr_price"].update(value=price)
-    window["token"].update(value=(f"{token} details").upper())
-    window["curr_USDT"].update(value=usdt_spent)
+    window["token"].update(value=f"{token} details".upper())
+    window["curr_USDT"].update(value=usdt_for_now)
+    window["av_price"].update(value=current_av_price_data)
+    window["USDT_spent"].update(value=usdt_spent)
+    window["difference"].update(value=diff)
+    if diff > 0:
+        window["graphpic"].update(value="📈", text_color='green')
+        result_text = f"{diff}$ earned for now"
+        window["result"].update(value=result_text, text_color='green')
+    elif diff < 0:
+        window["graphpic"].update(value="📉", text_color='red')
+        result_text = f"{diff}$ lost for now"
+        window["result"].update(value=result_text, text_color='red')
 
 
 def draw_window(layout):
@@ -175,7 +197,11 @@ def create_details_window(payload):
             window["av_price"].update(visible=True, value=price)
             window["set_price"].update(visible=False)
             calculate(price, window)
-
+            token = (window['token'].DisplayText).split()[0]
+            save_to_av_prices(token.strip(), float(price))
+            # TODO: Сделать обновление и создание новых данных в базе приятным процессом.
+            #   Подгружать данные в окно детального просмотра при их наличии. При отсутствии -
+            #   технично обходить этот момент
     window.close()
 
 

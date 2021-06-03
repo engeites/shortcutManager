@@ -134,10 +134,12 @@ def redraw_prices(window):
     user_control.info(f"global var current_prices is set to {current_prices}")
     current_prices = payload
     reload_total_sum(window)
+    logger.debug(f"REDRAWING PRICES. NEW PAYLOAD: {current_prices}")
     return payload
 
 
 def swap_prices_and_amounts(window):
+    # TODO: THIS FUNCTION HAS A BUG. POPUP is shown every time
     global amount_shown, current_prices
     if not amount_shown:
         for token in tokens:
@@ -217,7 +219,8 @@ def main():
             # most of data on main window (token prices and total sum)
             # TODO: MAYBE THIS FUNC NEEDS RETHINKING? APP FROZES UNTILL PRICES ARE DROWN
             payload = redraw_prices(window)
-            save_all_to_database(payload)
+
+            # save_all_to_database(payload) # Saving price to database function still doesn't work
             redraw_time(window, time)
         else:
             redraw_time(window, time)
@@ -287,8 +290,8 @@ def main():
         if event in tokens:
             payload = {
                 "token": event,
-                "price": window[event].DisplayText,
-                "amount": my_coin_load[event]}
+                "price": float(window[event].DisplayText),
+                "amount": float(my_coin_load[event])}
 
             create_details_window(payload)
 

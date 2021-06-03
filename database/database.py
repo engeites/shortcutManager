@@ -1,7 +1,7 @@
 import sqlite3
 from sqlite3 import OperationalError
 import time
-
+from config import DATABASE_FILE
 
 def get_time():
     return time.strftime("%m-%d-%Y|%T")
@@ -10,9 +10,8 @@ def get_time():
 class Database:
     token = ""
 
-
     def __init__(self):
-        self.conn = sqlite3.connect('db.sqlite')
+        self.conn = sqlite3.connect(DATABASE_FILE)
         self.cur = self.conn.cursor()
 
     def close(self):
@@ -25,56 +24,43 @@ class Database:
             return False
         return True
 
-    def create_table(self, token):
-        COMMAND = f"CREATE TABLE IF NOT EXISTS {token}(timedate, price real);"
+
+class AveragePrices:
+
+    def __init__(self):
+        self.conn = sqlite3.connect(DATABASE_FILE)
+        self.cur = self.conn.cursor()
+        self.create_table()
+
+    def create_table(self):
+        COMMAND = f"CREATE TABLE IF NOT EXISTS av_price(token text, price real);"
         self.cur.execute(COMMAND)
-        print(f"table {token} created")
 
-    def add_data(self, token, *payload):
-        command = f"INSERT INTO {token} VALUES (?, ?)"
-        self.cur.execute(command, payload)
-        print(f"successfully added to table {token} price: {payload}")
+    def check_if_token_in_base(self, token):
+        r = self.cur.execute("SELECT token FROM av_price WHERE token=?", (token,)).fetchone()
+        print(f"Is token in base? {r}")
+        if r is None:
+            return False
+        return True
 
+    def update_price(self, *payload):
+        with self.conn:
+            return self.cur.execute("UPDATE av_price SET price = ? WHERE token=?", payload)
 
-    def check_tables(self):
-        self.cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
-        print(self.cur.fetchall())
+    def add_entry(self, *payload):
+        with self.conn:
+            return self.cur.execute("INSERT INTO 'av_price' ('token', 'price') VALUES (?,?)", payload)
 
-    def delete_table(self, token):
-        r = self.cur.execute(f"DROP TABLE {token};")
-        print("Table dropped")
-        print(r)
+    def get_one(self, token):
+        with self.conn:
+            try:
+                return self.cur.execute("SELECT price FROM av_price WHERE token=?", (token,)).fetchone()
+            except OperationalError as e:
+                print(f"sqlite Operational Error line 116: {e}")
+                return "***"
 
-    def commit_changes(self):
-        self.conn.commit()
-
-    def select_from(self, token):
-        r = self.cur.execute(f"SELECT * FROM {token};").fetchall()
-        print(r)
-
-    def save_to_database(self, token, price):
-        exists = self.check_if_table_exists(token)
-        timedate = get_time()
-        token = self.translate_to_sql(token)
-        if exists:
-            self.add_data(token, price, timedate)
-            self.commit_changes()
-        else:
-            self.create_table(token)
-            self.add_data(token, price, timedate)
-            self.commit_changes()
-
-    def translate_to_sql(self, token):
-        new_token = token
-        if "-" in token:
-            new_token = token.replace("-", "__")
-        if "1" in token:
-            new_token = token.replace("1", "one_")
-        return new_token
-
-    def translate_from_sql(self, token):
-        translated = self.translate_to_sql(token)
-        self.select_from(token)
+    def close_connection(self):
+        self.conn.close()
 
 
 if __name__ == '__main__':
